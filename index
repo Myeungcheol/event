@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 말띠 이벤트 : 긁어서 당첨 확인하기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Landscape orientation optimizations */
+        @media (orientation: landscape) {
+            body {
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                padding: 1vh;
+                gap: 2vw;
+                min-height: 100vh;
+            }
+
+            .hero-section {
+                flex: 0 0 40vw;
+                padding: 0;
+                text-align: left;
+                max-width: 40vw;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .hero-title {
+                font-size: clamp(1.5rem, 4vw, 2.5rem);
+                margin-bottom: 1vh;
+            }
+
+            .hero-subtitle {
+                font-size: clamp(0.9rem, 2vw, 1.2rem);
+            }
+
+            .scratch-container {
+                flex: 0 0 50vw;
+                padding: 0;
+                max-width: 50vw;
+                max-height: 80vh;
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .scratch-card {
+                max-width: 100%;
+                max-height: 60vh;
+                aspect-ratio: 4/3;
+            }
+
+            .congratulations-popup {
+                max-width: 80vw;
+                max-height: 80vh;
+                padding: 1.5vh 2vw;
+                overflow-y: auto;
+            }
+
+            .popup-title {
+                font-size: clamp(1.5rem, 4vw, 2rem);
+            }
+
+            .popup-message {
+                font-size: clamp(1rem, 2.5vw, 1.2rem);
+            }
+
+            .play-again-btn {
+                padding: 0.8vh 1.5vw;
+                font-size: clamp(0.9rem, 2vw, 1rem);
+            }
+        }
+
+        /* Portrait orientation (default) */
+        @media (orientation: portrait) {
+            .hero-section {
+                padding: 3vh 2vw;
+            }
+
+            .scratch-container {
+                padding: 2vh 2vw;
+                flex: 1;
+                max-height: 70vh;
+            }
+
+            .scratch-card {
+                max-width: 90vw;
+                max-height: 50vh;
+            }
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: white;
+            flex: 0 0 auto;
+        }
+
+        .hero-title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .scratch-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .scratch-card {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            aspect-ratio: 3/2;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            background: white;
+        }
+
+        .result-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .result-amount {
+            font-size: clamp(2rem, 6vw, 3rem);
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .result-message {
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            opacity: 0.9;
+        }
+
+        #scratchCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .congratulations-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 1000;
+            max-width: 90%;
+            width: 350px;
+        }
+
+        .congratulations-popup.show {
+            animation: popupBounce 0.6s ease-out forwards;
+        }
+
+        .popup-title {
+            font-size: 2rem;
+            color: #FFD700;
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .popup-message {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+
+        .play-again-btn {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .play-again-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes popupBounce {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            font-size: 1.1rem;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 10;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <h1 class="hero-title">🎉 [EVENT] 🎉</h1>
+        <h1 class="hero-title">꽝 없는 럭키 드로우!</h1>
+        <h1 class="hero-title">오늘 단 하루,</h1>
+        <h1 class="hero-title">100% 당첨의 기회</h1>
+        <p class="hero-subtitle">긁어서 확인해 주세요!</p>
+    </div>
+
+    <div class="scratch-container">
+        <div class="scratch-card">
+            <div class="result-layer">
+                <div class="result-amount">당첨</div>
+                <div class="result-message">🎊 축하드립니다! 🎊</div>
+            </div>
+            <div class="instructions"> </div>
+            <canvas id="scratchCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="congratulations-popup" id="congratulationsPopup">
+        <div class="popup-title">🎊 이모 당첨! 🎊</div>
+        <div class="popup-message">조카를 선물로 드립니다!</div>
+        <button class="play-again-btn" onclick="resetGame()">Play Again</button>
+    </div>
+
+    <canvas class="confetti-canvas" id="confettiCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('scratchCanvas');
+        const ctx = canvas.getContext('2d');
+        const scratchCard = document.querySelector('.scratch-card');
+        const instructions = document.querySelector('.instructions');
+        const congratulationsPopup = document.getElementById('congratulationsPopup');
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+
+        let isDrawing = false;
+        let hasRevealed = false;
+        let scratchedPixels = 0;
+        let totalPixels = 0;
+
+        // Prize pool
+        const prizes = [
+            { amount: '$10', message: 'Nice Try!', isWinner: false },
+            { amount: '$25', message: 'Good Luck!', isWinner: false },
+            { amount: '$50', message: 'Almost There!', isWinner: false },
+            { amount: '$100', message: '🎊 WINNER! 🎊', isWinner: true },
+            { amount: '$500', message: '🎉 JACKPOT! 🎉', isWinner: true }
+        ];
+
+        function initCanvas() {
+            const rect = scratchCard.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Create scratch surface
+            ctx.fillStyle = '#FFB6C1';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add decorative pattern
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < canvas.width; i += 20) {
+                for (let j = 0; j < canvas.height; j += 20) {
+                    ctx.beginPath();
+                    ctx.arc(i + 10, j + 10, 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            
+            // Add "SCRATCH" text
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('SCRATCH', canvas.width / 2, canvas.height / 2);
+            
+            totalPixels = canvas.width * canvas.height;
+        }
+
+        function scratch(x, y) {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI * 2);
+            ctx.fill();
+            
+            checkScratchProgress();
+        }
+
+        function checkScratchProgress() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            let transparent = 0;
+            
+            for (let i = 3; i < pixels.length; i += 4) {
+                if (pixels[i] < 128) {
+                    transparent++;
+                }
+            }
+            
+            const percentage = (transparent / totalPixels) * 100;
+            
+            if (percentage > 40 && !hasRevealed) {
+                revealPrize();
+            }
+        }
+
+        function revealPrize() {
+            hasRevealed = true;
+            instructions.style.display = 'none';
+            
+            // Clear the entire canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            setTimeout(() => {
+                    showCongratulations();
+                    startConfetti();
+                }, 500);
+            
+            // Check if winner and trigger celebration
+            const currentPrize = prizes.find(p => p.amount === document.querySelector('.result-amount').textContent);
+            if (currentPrize && currentPrize.isWinner) {
+                
+            }
+        }
+
+        function showCongratulations() {
+            congratulationsPopup.classList.add('show');
+        }
+
+        function startConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+            
+            const confetti = [];
+            const colors = ['#FFD700', '#FFB6C1', '#FF69B4', '#FFA500', '#FF1493'];
+            
+            for (let i = 0; i < 150; i++) {
+                confetti.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                    vx: Math.random() * 2 - 1,
+                    vy: Math.random() * 3 + 2,
+                    size: Math.random() * 3 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    angle: Math.random() * 360,
+                    angleVelocity: Math.random() * 10 - 5
+                });
+            }
+            
+            function animateConfetti() {
+                confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+                
+                confetti.forEach((particle, index) => {
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.angle += particle.angleVelocity;
+                    particle.vy += 0.1;
+                    
+                    confettiCtx.save();
+                    confettiCtx.translate(particle.x, particle.y);
+                    confettiCtx.rotate(particle.angle * Math.PI / 180);
+                    confettiCtx.fillStyle = particle.color;
+                    confettiCtx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
+                    confettiCtx.restore();
+                    
+                    if (particle.y > confettiCanvas.height) {
+                        confetti.splice(index, 1);
+                    }
+                });
+                
+                if (confetti.length > 0) {
+                    requestAnimationFrame(animateConfetti);
+                }
+            }
+            
+            animateConfetti();
+        }
+
+        function resetGame() {
+            hasRevealed = false;
+            congratulationsPopup.classList.remove('show');
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            
+            // Select new random prize
+            const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
+            document.querySelector('.result-amount').textContent = randomPrize.amount;
+            document.querySelector('.result-message').textContent = randomPrize.message;
+            
+            // Reset canvas
+            initCanvas();
+            instructions.style.display = 'block';
+        }
+
+        // Mouse events
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            scratch(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing && !hasRevealed) {
+                const rect = canvas.getBoundingClientRect();
+                scratch(e.clientX - rect.left, e.clientY - rect.top);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+        });
+
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            scratch(touch.clientX - rect.left, touch.clientY - rect.top);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (isDrawing && !hasRevealed) {
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                scratch(touch.clientX - rect.left, touch.clientY - rect.top);
+            }
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            isDrawing = false;
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (!hasRevealed) {
+                initCanvas();
+            }
+        });
+
+        // Initialize on load
+        initCanvas();
+    </script>
+</body>
+</html>
